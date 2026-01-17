@@ -1,25 +1,24 @@
-const Auth={
- users:[
-  {user:"admin",pass:"admin",role:"public"},
-  {user:"LughLT",pass:"lugh123",role:"user"}
- ],
- login(u,p){
-  const f=this.users.find(x=>x.user===u&&x.pass===p);
-  if(!f)return false;
-  localStorage.setItem("session_user",f.user);
-  localStorage.setItem("session_role",f.role);
-  localStorage.removeItem("isAdmin");
-  return true;
- },
- logout(){localStorage.clear();},
- isLogged(){return !!localStorage.getItem("session_user");},
- isAdmin(){return localStorage.getItem("isAdmin")==="1";},
- elevate(pin){
-  if(pin==="4866"&&this.isLogged()){
-   localStorage.setItem("isAdmin","1");
-   return true;
-  }
-  return false;
- },
- currentUser(){return localStorage.getItem("session_user");}
+const Auth = {
+    // Tenta fazer login
+    login: (user, pass) => {
+        // Substitui 'admin' e '123' pelas tuas credenciais se quiseres
+        if (user === "admin" && pass === "123") {
+            localStorage.setItem("isLogged", "true");
+            localStorage.setItem("userSession", user);
+            return true;
+        }
+        return false;
+    },
+
+    // Verifica se existe sessão ativa
+    isLogged: () => {
+        return localStorage.getItem("isLogged") === "true";
+    },
+
+    // Encerra a sessão (Botão Sair)
+    logout: () => {
+        localStorage.removeItem("isLogged");
+        localStorage.removeItem("userSession");
+        return true;
+    }
 };
