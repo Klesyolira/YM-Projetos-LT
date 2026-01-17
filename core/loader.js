@@ -8,11 +8,10 @@ async function loadProject(slug) {
         });
         const data = await res.json();
         
-        if (data.html) {
+        if (data && data.html) {
             app.innerHTML = data.html;
-            document.title = data.nome || "LUGH LT";
             
-            // Re-executa scripts se houver no HTML injetado
+            // Executa os scripts internos (Carrinho, WhatsApp, etc)
             const scripts = app.querySelectorAll("script");
             scripts.forEach(oldScript => {
                 const newScript = document.createElement("script");
@@ -21,6 +20,6 @@ async function loadProject(slug) {
             });
         }
     } catch (e) {
-        app.innerHTML = "Erro ao carregar projeto do Banco Neon.";
+        app.innerHTML = "<div class='text-white p-10'>Erro ao carregar do Neon.</div>";
     }
 }
