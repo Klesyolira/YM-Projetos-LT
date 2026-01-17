@@ -15,16 +15,20 @@ exports.handler = async (event) => {
         const body = JSON.parse(event.body);
         const { action, slug, nome, html } = body;
 
+        // LISTAR
         if (action === 'get_list') {
             const projects = await sql`SELECT slug, nome FROM projetos ORDER BY updated_at DESC`;
             return { statusCode: 200, headers, body: JSON.stringify(projects) };
         }
 
+        // CARREGAR
         if (action === 'load') {
             const project = await sql`SELECT html, nome FROM projetos WHERE slug = ${slug}`;
-            return { statusCode: 200, headers, body: JSON.stringify(project[0] || { html: "" }) };
+            if (!project.length) return { statusCode: 404, headers, body: JSON.stringify({error: "Não encontrado"}) };
+            return { statusCode: 200, headers, body: JSON.stringify(project[0]) };
         }
 
+        // SALVAR
         if (action === 'save') {
             await sql`
                 INSERT INTO projetos (slug, nome, html) 
@@ -35,7 +39,12 @@ exports.handler = async (event) => {
             return { statusCode: 200, headers, body: JSON.stringify({ message: "Sucesso" }) };
         }
 
-        return { statusCode: 400, headers, body: "Ação inválida" };
+        // DELETAR
+        if (action === 'delete') {
+            await sql`DELETE FROM projetos WHERE slug = ${slug}`;
+            return { statusCode: 200, headers, body: JSON.stringify({ message: "Removido" }) };
+        }
+
     } catch (e) {
         return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
     }
