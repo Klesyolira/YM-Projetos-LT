@@ -2,101 +2,132 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Painel Neon Cloud</title>
+    <title>Admin Neon | Sr. Araujo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: #e5e7eb; padding: 20px; }
-        .card { background: #111827; padding: 20px; border-radius: 12px; border: 1px solid #1f2937; margin-bottom: 20px; }
-        select, textarea, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
-        textarea { height: 450px; font-family: monospace; border-left: 4px solid #2563eb; }
-        button { background: #2563eb; font-weight: bold; cursor: pointer; border: none; }
-        .btn-red { background: #dc2626; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .card { background: #111827; border: 1px solid #1f2937; border-radius: 1rem; }
+        textarea { background: #0f172a !important; color: #60a5fa !important; font-family: 'Fira Code', monospace; }
     </style>
 </head>
-<body>
+<body class="p-4 md:p-8">
 
-<div class="card">
-    <h2>Neon Database Manager</h2>
-    <div class="grid">
-        <select id="projectSelect" onchange="load()"></select>
-        <button onclick="createNew()" style="background: #334155">+ Novo Projeto</button>
+    <div class="max-w-5xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fas fa-database text-blue-500"></i> Neon Cloud Manager
+                </h1>
+                <p class="text-slate-500 text-sm">Gerencie sua loja em tempo real</p>
+            </div>
+            <button onclick="logout()" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/20 px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2">
+                <i class="fas fa-power-off"></i> SAIR
+            </button>
+        </header>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="card p-6 flex flex-col gap-4">
+                <label class="font-bold text-slate-400 text-sm">PROJETO ATIVO</label>
+                <select id="projectSelect" onchange="load()" class="bg-slate-800 border-none p-3 rounded-lg text-white outline-none"></select>
+                <button onclick="createNew()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-lg font-bold transition">+ Novo Projeto</button>
+            </div>
+
+            <div class="md:col-span-2 card p-6">
+                <textarea id="editor" class="w-full h-[500px] p-4 rounded-lg border border-slate-800 outline-none mb-4" spellcheck="false" placeholder="Cole o HTML da sua loja aqui..."></textarea>
+                
+                <div class="flex gap-4">
+                    <button id="btnSave" onclick="save()" class="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> SALVAR NO NEON
+                    </button>
+                    <button onclick="preview()" class="bg-slate-800 px-6 rounded-xl hover:bg-slate-700 transition">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
+                </div>
+                <button onclick="deleteProj()" class="w-full mt-4 text-slate-600 hover:text-red-500 text-xs font-bold transition">ELIMINAR PROJETO</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="card">
-    <textarea id="editor" placeholder="Código HTML..."></textarea>
-    <div class="grid">
-        <button id="btnSave" onclick="save()">SALVAR NO BANCO</button>
-        <button onclick="window.open('index.html?project='+document.getElementById('projectSelect').value)" style="background: #334155">VER SITE</button>
-    </div>
-    <button onclick="deleteProj()" class="btn-red" style="margin-top:10px">Eliminar Projeto</button>
-</div>
+    <script src="core/auth.js"></script>
+    <script>
+        // Proteção
+        if(!Auth.isLogged()) location.href = "login.html";
 
-<script src="core/auth.js"></script>
-<script>
-    if(!Auth.isLogged()) location.href="login.html";
+        const select = document.getElementById("projectSelect");
+        const editor = document.getElementById("editor");
+        const btnSave = document.getElementById("btnSave");
 
-    const select = document.getElementById("projectSelect");
-    const editor = document.getElementById("editor");
-    const btnSave = document.getElementById("btnSave");
-
-    async function api(data) {
-        const res = await fetch("/.netlify/functions/manage-db", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        });
-        return res.json();
-    }
-
-    async function list() {
-        const data = await api({ action: 'get_list' });
-        select.innerHTML = "";
-        data.forEach(p => {
-            const opt = document.createElement("option");
-            opt.value = p.slug; opt.textContent = p.nome;
-            select.appendChild(opt);
-        });
-        if(data.length > 0) load();
-    }
-
-    async function load() {
-        const data = await api({ action: 'load', slug: select.value });
-        editor.value = data.html || "";
-    }
-
-    async function save() {
-        btnSave.innerText = "⏳ SALVANDO...";
-        try {
-            await api({ 
-                action: 'save', 
-                slug: select.value, 
-                nome: select.value.toUpperCase(), 
-                html: editor.value 
+        async function api(data) {
+            const res = await fetch("/.netlify/functions/manage-db", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
             });
-            alert("✅ Salvo no Neon!");
-        } catch(e) { alert("Erro ao salvar."); }
-        btnSave.innerText = "SALVAR NO BANCO";
-    }
+            return res.json();
+        }
 
-    function createNew() {
-        const name = prompt("Nome do projeto:");
-        if(!name) return;
-        const slug = name.toLowerCase().replace(/\s+/g, '-');
-        const opt = document.createElement("option");
-        opt.value = slug; opt.textContent = name;
-        select.appendChild(opt);
-        select.value = slug;
-        editor.value = "<h1>" + name + "</h1>";
-    }
+        async function list() {
+            const data = await api({ action: 'get_list' });
+            select.innerHTML = "";
+            data.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.slug; opt.textContent = p.nome;
+                select.appendChild(opt);
+            });
+            if(data.length > 0) load();
+        }
 
-    async function deleteProj() {
-        if(!confirm("Deletar?")) return;
-        await api({ action: 'delete', slug: select.value });
+        async function load() {
+            const data = await api({ action: 'load', slug: select.value });
+            editor.value = data.html || "";
+        }
+
+        async function save() {
+            btnSave.innerText = "⏳ A GUARDAR...";
+            btnSave.disabled = true;
+            try {
+                await api({ 
+                    action: 'save', 
+                    slug: select.value, 
+                    nome: select.value.toUpperCase(), 
+                    html: editor.value 
+                });
+                alert("✅ Sincronizado com Neon!");
+            } catch(e) { alert("Erro ao salvar."); }
+            btnSave.innerText = "SALVAR NO NEON";
+            btnSave.disabled = false;
+        }
+
+        function createNew() {
+            const name = prompt("Nome do projeto:");
+            if(!name) return;
+            const slug = name.toLowerCase().replace(/\s+/g, '-');
+            const opt = document.createElement("option");
+            opt.value = slug; opt.textContent = name;
+            select.appendChild(opt);
+            select.value = slug;
+            editor.value = "<h1>" + name + "</h1>";
+        }
+
+        function preview() {
+            window.open(`index.html?project=${select.value}`, '_blank');
+        }
+
+        function logout() {
+            if(confirm("Deseja sair do painel?")) {
+                Auth.logout();
+                location.href = "login.html";
+            }
+        }
+
+        async function deleteProj() {
+            if(!confirm("Certeza que deseja apagar?")) return;
+            await api({ action: 'delete', slug: select.value });
+            list();
+        }
+
         list();
-    }
-
-    list();
-</script>
+    </script>
 </body>
 </html>
