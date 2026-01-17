@@ -1,24 +1,23 @@
 const Auth = {
-    // Tenta fazer login
+    // Função de Login
     login: (user, pass) => {
-        // Substitui 'admin' e '123' pelas tuas credenciais se quiseres
-        if (user === "admin" && pass === "123") {
+        // Aqui você pode conferir se o código é 4866 ou qualquer outra senha
+        if ((user === "admin" && pass === "4866") || (user === "admin" && pass === "123")) {
             localStorage.setItem("isLogged", "true");
-            localStorage.setItem("userSession", user);
+            localStorage.setItem("adm_code", "4866"); // Guarda a permissão
             return true;
         }
         return false;
     },
 
-    // Verifica se existe sessão ativa
+    // Verifica se está logado
     isLogged: () => {
         return localStorage.getItem("isLogged") === "true";
     },
 
-    // Encerra a sessão (Botão Sair)
+    // Botão de Sair (Limpa tudo)
     logout: () => {
-        localStorage.removeItem("isLogged");
-        localStorage.removeItem("userSession");
+        localStorage.clear();
         return true;
     }
 };
