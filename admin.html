@@ -2,120 +2,128 @@
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <title>Painel Admin | Sr. Araujo</title>
+    <title>Painel Administrativo | Sr. Araujo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
-        .card { background: #111827; border: 1px solid #1f2937; border-radius: 1.5rem; }
-        textarea { background: #0b0e14 !important; color: #60a5fa !important; font-family: 'Fira Code', monospace; font-size: 13px; }
+        body { background-color: #0b0e14; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        textarea { background: #07090e !important; color: #60a5fa !important; font-family: 'Fira Code', monospace; border: 1px solid #1e293b !important; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-center mb-10">
-            <div>
-                <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-tools text-blue-500"></i> Gestor Neon Cloud
-                </h1>
-                <p class="text-slate-500 text-sm">Bem-vindo, Sr. Araujo</p>
+        <header class="flex justify-between items-center mb-8 bg-slate-900/50 p-6 rounded-3xl border border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-bolt text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">Gestor Neon Cloud</h1>
+                    <p class="text-slate-500 text-xs">Permissão ADM Ativa</p>
+                </div>
             </div>
             
-            <button onclick="handleLogout()" class="group flex items-center gap-3 bg-red-500/10 hover:bg-red-600 border border-red-500/20 px-5 py-2.5 rounded-2xl text-red-500 hover:text-white transition-all font-bold">
-                <span>ENCERRAR SESSÃO</span>
-                <i class="fas fa-power-off group-hover:rotate-90 transition-transform"></i>
+            <button onclick="sairDoSistema()" class="bg-red-500/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2">
+                <i class="fas fa-power-off"></i> SAIR
             </button>
         </header>
 
         <div class="grid lg:grid-cols-4 gap-6">
-            <div class="card p-6 h-fit">
-                <label class="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-4">Escolher Projeto</label>
-                <select id="projectSelect" onchange="load()" class="w-full bg-slate-800 border-none p-4 rounded-xl text-white outline-none mb-4"></select>
-                <button onclick="createNew()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-bold transition">+ Novo Projeto</button>
-            </div>
-
-            <div class="lg:col-span-3 card p-8">
-                <textarea id="editor" class="w-full h-[500px] p-6 rounded-2xl border border-slate-800 outline-none mb-6 shadow-inner" spellcheck="false"></textarea>
-                
-                <div class="flex flex-wrap gap-4">
-                    <button id="btnSave" onclick="save()" class="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-bold shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-3">
-                        <i class="fas fa-save text-xl"></i> SALVAR NO BANCO NEON
-                    </button>
-                    <button onclick="preview()" class="bg-slate-800 px-8 rounded-2xl hover:bg-slate-700 transition-all text-white">
-                        <i class="fas fa-eye"></i> Ver Site
-                    </button>
+            <aside class="lg:col-span-1 space-y-4">
+                <div class="glass-panel p-6 rounded-3xl">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">Projetos no Neon</label>
+                    <select id="projectSelect" onchange="carregarProjeto()" class="w-full bg-slate-900 border-none p-4 rounded-2xl text-white outline-none mb-4"></select>
+                    <button onclick="novoProjeto()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-2xl text-sm font-bold transition">+ Novo</button>
                 </div>
-            </div>
+            </aside>
+
+            <main class="lg:col-span-3">
+                <div class="glass-panel p-6 rounded-3xl">
+                    <textarea id="editor" class="w-full h-[500px] p-6 rounded-2xl outline-none mb-6 shadow-2xl" spellcheck="false" placeholder="Cole seu código HTML aqui..."></textarea>
+                    
+                    <div class="flex gap-4">
+                        <button id="btnSave" onclick="salvarNoBanco()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-3">
+                            <i class="fas fa-save text-xl"></i> SALVAR NO NEON
+                        </button>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
     <script src="core/auth.js"></script>
     <script>
-        // Bloqueio de Segurança
-        if(!Auth.isLogged()) { location.href = "login.html"; }
+        // Verificação de segurança ao entrar
+        if(!Auth.isLogged()) { window.location.href = "login.html"; }
 
         const select = document.getElementById("projectSelect");
         const editor = document.getElementById("editor");
-        const btnSave = document.getElementById("btnSave");
 
-        async function api(data) {
+        async function chamarAPI(dados) {
             const res = await fetch("/.netlify/functions/manage-db", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify(dados)
             });
             return res.json();
         }
 
-        async function list() {
-            const data = await api({ action: 'get_list' });
-            select.innerHTML = "";
-            data.forEach(p => {
-                const opt = document.createElement("option");
-                opt.value = p.slug; opt.textContent = p.nome;
-                select.appendChild(opt);
-            });
-            if(data.length > 0) load();
+        async function listarProjetos() {
+            try {
+                const data = await chamarAPI({ action: 'get_list' });
+                select.innerHTML = "";
+                data.forEach(p => {
+                    const opt = document.createElement("option");
+                    opt.value = p.slug; opt.textContent = p.nome;
+                    select.appendChild(opt);
+                });
+                if(data.length > 0) carregarProjeto();
+            } catch(e) { console.error("Erro ao listar"); }
         }
 
-        async function load() {
-            const data = await api({ action: 'load', slug: select.value });
+        async function carregarProjeto() {
+            const data = await chamarAPI({ action: 'load', slug: select.value });
             editor.value = data.html || "";
         }
 
-        async function save() {
-            btnSave.innerHTML = "<i class='fas fa-circle-notch animate-spin'></i> A GUARDAR...";
+        async function salvarNoBanco() {
+            const btn = document.getElementById("btnSave");
+            btn.innerHTML = "<i class='fas fa-spinner animate-spin'></i> SALVANDO...";
             try {
-                await api({ action: 'save', slug: select.value, nome: select.value.toUpperCase(), html: editor.value });
-                alert("✅ Sincronizado com Sucesso!");
-            } catch(e) { alert("Erro ao salvar."); }
-            btnSave.innerHTML = "<i class='fas fa-save text-xl'></i> SALVAR NO BANCO NEON";
+                await chamarAPI({ 
+                    action: 'save', 
+                    slug: select.value, 
+                    nome: select.value.toUpperCase(), 
+                    html: editor.value 
+                });
+                alert("✅ Salvo com sucesso no Neon!");
+            } catch(e) { 
+                alert("❌ Erro ao salvar! Verifique os logs do Netlify."); 
+            }
+            btn.innerHTML = "<i class='fas fa-save text-xl'></i> SALVAR NO NEON";
         }
 
-        function handleLogout() {
-            if(confirm("Deseja mesmo sair do sistema?")) {
+        function sairDoSistema() {
+            if(confirm("Sr. Araujo, deseja encerrar a sessão?")) {
                 Auth.logout();
-                location.href = "login.html";
+                window.location.href = "login.html";
             }
         }
 
-        function createNew() {
-            const name = prompt("Nome do projeto:");
-            if(!name) return;
-            const slug = name.toLowerCase().replace(/\s+/g, '-');
+        function novoProjeto() {
+            const nome = prompt("Nome do projeto:");
+            if(!nome) return;
+            const slug = nome.toLowerCase().replace(/\s+/g, '-');
             const opt = document.createElement("option");
-            opt.value = slug; opt.textContent = name;
+            opt.value = slug; opt.textContent = nome;
             select.appendChild(opt);
             select.value = slug;
-            editor.value = "<h1>" + name + "</h1>";
+            editor.value = "";
         }
 
-        function preview() {
-            window.open(`index.html?project=${select.value}`, '_blank');
-        }
-
-        list();
+        listarProjetos();
     </script>
 </body>
 </html>
