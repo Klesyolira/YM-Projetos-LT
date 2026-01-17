@@ -1,23 +1,26 @@
-async function loadProject(slug){
- const base=`projects/${slug}/`;
- const conf=await fetch(base+"project.json").then(r=>r.json());
- document.title=conf.name;
-
- let html=Storage.get("project_html_"+slug);
- if(!html){
-  html=await fetch(base+conf.entry).then(r=>r.text());
- }
-
- document.getElementById("app").innerHTML=html;
- runScripts();
+async function loadProject(slug) {
+    try {
+        const res = await fetch("/.netlify/functions/manage-db", {
+            method: "POST",
+            body: JSON.stringify({ action: 'load', slug: slug })
+        });
+        
+        const data = await res.json();
+        document.title = data.nome || "Loja";
+        document.getElementById("app").innerHTML = data.html;
+        
+        // Executa os scripts que estão dentro do HTML carregado
+        runScripts();
+    } catch (e) {
+        document.getElementById("app").innerHTML = "Erro ao carregar projeto do Banco de Dados.";
+    }
 }
 
-function runScripts(){
- document.querySelectorAll("#app script").forEach(s=>{
-  const n=document.createElement("script");
-  if(s.src)n.src=s.src;
-  else n.textContent=s.textContent;
-  document.body.appendChild(n);
-  s.remove();
- });
+function runScripts() {
+    document.querySelectorAll("#app script").forEach(oldScript => {
+        const newScript = document.createElement("script");
+        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
 }
