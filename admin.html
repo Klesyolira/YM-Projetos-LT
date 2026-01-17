@@ -2,186 +2,98 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin NEON Cloud | LUGH LT</title>
+    <title>Painel Administrativo Neon</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e5e7eb; padding: 20px; margin: 0; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .card { background: #111827; padding: 20px; border-radius: 12px; border: 1px solid #1f2937; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h2 { margin: 0; color: #3b82f6; font-size: 1.5rem; }
-        
-        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #94a3b8; }
-        select, textarea, input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; font-size: 14px; }
-        
-        textarea { height: 500px; font-family: 'Fira Code', 'Consolas', monospace; border-left: 4px solid #2563eb; }
-        
-        button { background: #2563eb; font-weight: bold; cursor: pointer; border: none; transition: all 0.2s; }
-        button:hover { background: #1d4ed8; transform: translateY(-1px); }
-        button:disabled { background: #334155; cursor: not-allowed; }
-        
-        .btn-red { background: #dc2626; }
-        .btn-red:hover { background: #b91c1c; }
-        .btn-outline { background: transparent; border: 1px solid #334155; }
-        .btn-outline:hover { background: #1e293b; }
-        
+        body { font-family: sans-serif; background: #0f172a; color: #e5e7eb; padding: 20px; }
+        .card { background: #111827; padding: 20px; border-radius: 12px; border: 1px solid #1f2937; margin-bottom: 20px; }
+        select, textarea, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
+        textarea { height: 400px; font-family: monospace; border-left: 4px solid #2563eb; }
+        button { background: #2563eb; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #1d4ed8; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .status-dot { height: 8px; width: 8px; background-color: #10b981; border-radius: 50%; display: inline-block; margin-right: 5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <div>
-            <h2><span class="status-dot"></span>Neon Database</h2>
-            <small id="userDisplay" style="color: #64748b"></small>
-        </div>
-        <button onclick="logout()" class="btn-outline" style="width: auto;">Sair</button>
-    </header>
-
-    <div class="card">
-        <label>Selecione o Projeto Ativo:</label>
-        <div class="grid">
-            <select id="projectSelect" onchange="loadProject()"></select>
-            <button onclick="createNew()" class="btn-outline">+ Novo Projeto</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <label>Editor de Código (Sincronizado em Nuvem):</label>
-        <textarea id="editor" spellcheck="false" placeholder="Carregando dados do servidor..."></textarea>
-        
-        <div class="grid">
-            <button id="btnSave" onclick="save()">SALVAR NO BANCO DE DADOS</button>
-            <button onclick="openPreview()" class="btn-outline">VISUALIZAR SITE</button>
-        </div>
-        
-        <button onclick="deleteProj()" class="btn-red" style="margin-top: 20px;">Eliminar Projeto Permanentemente</button>
+<div class="card">
+    <h2>Gerenciador de Projetos (Neon)</h2>
+    <div class="grid">
+        <select id="projectSelect" onchange="load()"></select>
+        <button onclick="createNew()" style="background: #334155">+ Novo Projeto</button>
     </div>
 </div>
 
-<script src="core/auth.js"></script>
-<script src="core/storage.js"></script> 
+<div class="card">
+    <textarea id="editor" placeholder="Código HTML aqui..."></textarea>
+    <button id="btnSave" onclick="save()">SALVAR NO BANCO DE DADOS</button>
+</div>
 
+<script src="core/auth.js"></script>
 <script>
-    // Proteção de Rota
-    if(!Auth.isLogged()){ 
-        location.href="login.html"; 
-    } else if(!Auth.isAdmin()){
-        const pin = prompt("Acesso Restrito. Digite o PIN:"); 
-        if(!Auth.elevate(pin)) location.href="index.html";
-    }
-    
-    document.getElementById("userDisplay").innerText = "Logado como: " + Auth.currentUser();
+    // Se não estiver logado, volta pro login
+    if(!Auth.isLogged()) location.href = "login.html";
 
     const select = document.getElementById("projectSelect");
     const editor = document.getElementById("editor");
-    const btnSave = document.getElementById("btnSave");
+    const btn = document.getElementById("btnSave");
 
-    // Função auxiliar para falar com a Netlify Function
-    async function apiRequest(data) {
-        try {
-            const response = await fetch("/.netlify/functions/manage-db", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) throw new Error(await response.text());
-            return await response.json();
-        } catch (err) {
-            console.error("Erro na API:", err);
-            alert("Erro de Conexão: " + err.message);
-            return null;
-        }
+    async function api(data) {
+        const res = await fetch("/.netlify/functions/manage-db", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        return res.json();
     }
 
-    async function listProjects() {
-        const list = await apiRequest({ action: 'get_list' });
-        if (list) {
-            select.innerHTML = "";
-            list.forEach(p => {
-                const opt = document.createElement("option");
-                opt.value = p.slug; 
-                opt.textContent = p.nome || p.slug;
-                select.appendChild(opt);
-            });
-            if(list.length > 0) loadProject();
-        }
+    async function list() {
+        const projects = await api({ action: 'get_list' });
+        select.innerHTML = "";
+        projects.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.slug; opt.textContent = p.nome;
+            select.appendChild(opt);
+        });
+        if(projects.length > 0) load();
     }
 
-    async function loadProject() {
-        const slug = select.value;
-        if (!slug) return;
-        
-        editor.value = "Buscando dados no Neon...";
-        const data = await apiRequest({ action: 'load', slug: slug });
-        if (data) {
-            editor.value = data.html;
-        }
+    async function load() {
+        const data = await api({ action: 'load', slug: select.value });
+        editor.value = data.html || "";
     }
 
     async function save() {
-        const slug = select.value;
-        const html = editor.value;
-        if (!slug) return alert("Selecione ou crie um projeto primeiro.");
-
-        btnSave.innerText = "⏳ SALVANDO NA NUVEM...";
-        btnSave.disabled = true;
-
-        const result = await apiRequest({ 
-            action: 'save', 
-            slug: slug, 
-            nome: slug.toUpperCase(), 
-            html: html 
-        });
-
-        if (result) {
-            alert("✅ Sincronizado com Sucesso!");
-        }
+        btn.innerText = "⏳ A GUARDAR...";
+        btn.disabled = true;
         
-        btnSave.innerText = "SALVAR NO BANCO DE DADOS";
-        btnSave.disabled = false;
+        try {
+            await api({ 
+                action: 'save', 
+                slug: select.value, 
+                nome: select.value.toUpperCase(), 
+                html: editor.value 
+            });
+            alert("✅ Salvo com sucesso no Neon!");
+        } catch (e) {
+            alert("❌ Erro ao salvar. Verifique os logs do Netlify.");
+        } finally {
+            btn.innerText = "SALVAR NO BANCO DE DADOS";
+            btn.disabled = false;
+        }
     }
 
     function createNew() {
-        const name = prompt("Nome do novo projeto (sem espaços):");
-        if(!name) return;
-        const slug = name.toLowerCase().replace(/\s+/g, '-');
-        
-        // Setup visual imediato
+        const n = prompt("Nome do projeto:");
+        if(!n) return;
+        const s = n.toLowerCase().replace(/\s+/g, '-');
         const opt = document.createElement("option");
-        opt.value = slug; opt.textContent = name.toUpperCase();
+        opt.value = s; opt.textContent = n;
         select.appendChild(opt);
-        select.value = slug;
-        editor.value = `\n<h1>Novo Projeto ${name}</h1>`;
-        
-        // O salvamento real ocorre quando clicar em Salvar
+        select.value = s;
+        editor.value = "<h1>" + n + "</h1>";
     }
 
-    async function deleteProj() {
-        const slug = select.value;
-        if(!confirm(`Deseja realmente apagar o projeto "${slug}"? Esta ação é irreversível.`)) return;
-        
-        const result = await apiRequest({ action: 'delete', slug: slug });
-        if (result) {
-            alert("Projeto removido!");
-            listProjects();
-        }
-    }
-
-    function openPreview() {
-        window.open(`index.html?project=${select.value}`, "_blank");
-    }
-
-    function logout() {
-        Auth.logout();
-        location.href = "login.html";
-    }
-
-    // Inicialização
-    listProjects();
+    list();
 </script>
 </body>
 </html>
