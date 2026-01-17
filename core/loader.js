@@ -1,26 +1,29 @@
 async function loadProject(slug) {
+    const app = document.getElementById("app");
+    app.innerHTML = "Carregando do Banco de Dados...";
+
     try {
         const res = await fetch("/.netlify/functions/manage-db", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: 'load', slug: slug })
         });
-        
-        const data = await res.json();
-        document.title = data.nome || "Loja";
-        document.getElementById("app").innerHTML = data.html;
-        
-        // Executa os scripts que estão dentro do HTML carregado
-        runScripts();
-    } catch (e) {
-        document.getElementById("app").innerHTML = "Erro ao carregar projeto do Banco de Dados.";
-    }
-}
 
-function runScripts() {
-    document.querySelectorAll("#app script").forEach(oldScript => {
-        const newScript = document.createElement("script");
-        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-        oldScript.parentNode.replaceChild(newScript, oldScript);
-    });
+        const data = await res.json();
+        
+        if (data.html) {
+            app.innerHTML = data.html;
+            document.title = data.nome || "Loja";
+            
+            // Executa scripts que venham dentro do HTML salvo
+            const scripts = app.querySelectorAll("script");
+            scripts.forEach(s => {
+                const newScript = document.createElement("script");
+                newScript.text = s.innerHTML;
+                document.body.appendChild(newScript);
+            });
+        }
+    } catch (err) {
+        app.innerHTML = "Erro ao carregar o projeto da nuvem.";
+    }
 }
