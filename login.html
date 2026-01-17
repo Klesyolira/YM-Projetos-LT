@@ -1,116 +1,90 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acesso Restrito | Sr. Araujo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top left, #1e293b, #0b0e14);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            overflow: hidden;
-        }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        .input-field {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-        }
-        .input-field:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-            outline: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Painel Administrativo</title>
+<style>
+body{font-family:Arial;background:#0f172a;color:#e5e7eb;padding:20px}
+select,textarea,input,button{width:100%;margin:8px 0;padding:10px;border-radius:6px;border:none}
+textarea{height:300px;font-family:monospace}
+button{background:#2563eb;color:white;cursor:pointer}
+button.secondary{background:#334155}
+header{display:flex;justify-content:space-between;align-items:center}
+</style>
 </head>
 <body>
 
-    <div class="w-full max-w-md p-6 animate-fade-in">
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-4">
-                <i class="fas fa-bolt text-white text-3xl"></i>
-            </div>
-            <h1 class="text-3xl font-bold text-white tracking-tight">Painel <span class="text-blue-500">Admin</span></h1>
-            <p class="text-slate-400 mt-2 text-sm">Bem-vindo de volta, Sr. Araujo</p>
-        </div>
+<header>
+<h2>Administração de Projetos</h2>
+<div>
+<span id="user"></span>
+<button onclick="logout()" class="secondary">Sair</button>
+</div>
+</header>
 
-        <div class="glass-card rounded-3xl p-8">
-            <form id="loginForm" class="space-y-6">
-                <div>
-                    <label class="block text-slate-300 text-sm font-semibold mb-2 ml-1">Utilizador</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500">
-                            <i class="fas fa-user"></i>
-                        </span>
-                        <input type="text" id="username" placeholder="seu.utilizador" 
-                            class="input-field w-full pl-11 pr-4 py-3.5 rounded-xl text-white placeholder-slate-500">
-                    </div>
-                </div>
+<hr>
 
-                <div>
-                    <label class="block text-slate-300 text-sm font-semibold mb-2 ml-1">Palavra-passe</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500">
-                            <i class="fas fa-lock"></i>
-                        </span>
-                        <input type="password" id="password" placeholder="********" 
-                            class="input-field w-full pl-11 pr-4 py-3.5 rounded-xl text-white placeholder-slate-500">
-                    </div>
-                </div>
+<label>Projeto:</label>
+<select id="projectSelect"></select>
 
-                <button type="submit" 
-                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                    ENTRAR NO SISTEMA <i class="fas fa-arrow-right text-sm"></i>
-                </button>
-            </form>
-            
-            <div class="mt-8 pt-6 border-t border-white/5">
-                <button class="w-full py-3 rounded-xl border border-blue-500/30 text-blue-400 font-semibold hover:bg-blue-500/10 transition">
-                    <i class="fas fa-star text-xs mr-2"></i> Testar Gratuitamente (3 Dias)
-                </button>
-            </div>
-        </div>
+<label>HTML do Projeto:</label>
+<textarea id="editor"></textarea>
 
-        <div class="text-center mt-8 space-y-2">
-            <p id="ip-display" class="text-xs text-slate-500 font-mono">Seu IP: Carregando...</p>
-            <p class="text-[10px] text-slate-600 uppercase tracking-widest">© 2026 ARAUJO LABS • SECURE ACCESS</p>
-        </div>
-    </div>
+<button onclick="saveProject()">Salvar</button>
+<button onclick="preview()" class="secondary">Preview</button>
 
-    <script>
-        // Simulação de verificação de IP
-        fetch('https://api.ipify.org?format=json')
-            .then(res => res.json())
-            .then(data => document.getElementById('ip-display').innerText = `Seu IP: ${data.ip}`)
-            .catch(() => document.getElementById('ip-display').innerText = `Seu IP: Protegido`);
+<script src="core/auth.js"></script>
+<script src="core/storage.js"></script>
 
-        // Lógica de Login
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
+<script>
+if(!Auth.isLogged()){location.href="login.html";}
 
-            // Substitua 'admin' e '123' pelas suas credenciais desejadas
-            if(user === 'admin' && pass === '123') {
-                window.location.href = 'admin.html';
-            } else {
-                alert('Credenciais incorretas!');
-            }
-        });
-    </script>
+if(!Auth.isAdmin()){
+ const pin=prompt("Digite o PIN de administrador:");
+ if(!Auth.elevate(pin)){
+   alert("Acesso negado");
+   location.href="index.html";
+ }
+}
+
+document.getElementById("user").innerText="Usuário: "+Auth.currentUser();
+
+const projects=["lughlt"];
+const select=document.getElementById("projectSelect");
+projects.forEach(p=>{
+ const o=document.createElement("option");
+ o.value=p;o.textContent=p;
+ select.appendChild(o);
+});
+
+function loadProjectHTML(){
+ const slug=select.value;
+ const saved=Storage.get("project_html_"+slug);
+ if(saved){editor.value=saved;}
+ else{
+  fetch(`projects/${slug}/index.html`).then(r=>r.text()).then(t=>editor.value=t);
+ }
+}
+
+select.addEventListener("change",loadProjectHTML);
+loadProjectHTML();
+
+function saveProject(){
+ const slug=select.value;
+ Storage.set("project_html_"+slug,editor.value);
+ alert("Projeto salvo");
+}
+
+function preview(){
+ const slug=select.value;
+ window.open(`index.html?project=${slug}`,"_blank");
+}
+
+function logout(){
+ Auth.logout();
+ location.href="index.html";
+}
+</script>
 
 </body>
 </html>
