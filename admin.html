@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel Administrativo</title>
+<style>
+body{font-family:Arial;background:#0f172a;color:#e5e7eb;padding:20px}
+select,textarea,input,button{width:100%;margin:8px 0;padding:10px;border-radius:6px;border:none}
+textarea{height:300px;font-family:monospace}
+button{background:#2563eb;color:white;cursor:pointer}
+button.secondary{background:#334155}
+header{display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+
+<header>
+<h2>Administração de Projetos</h2>
+<div>
+<span id="user"></span>
+<button onclick="logout()" class="secondary">Sair</button>
+</div>
+</header>
+
+<hr>
+
+<label>Projeto:</label>
+<select id="projectSelect"></select>
+
+<label>HTML do Projeto:</label>
+<textarea id="editor"></textarea>
+
+<button onclick="saveProject()">Salvar</button>
+<button onclick="preview()" class="secondary">Preview</button>
+
+<script src="core/auth.js"></script>
+<script src="core/storage.js"></script>
+
+<script>
+if(!Auth.isLogged()){location.href="login.html";}
+
+if(!Auth.isAdmin()){
+ const pin=prompt("Digite o PIN de administrador:");
+ if(!Auth.elevate(pin)){
+   alert("Acesso negado");
+   location.href="index.html";
+ }
+}
+
+document.getElementById("user").innerText="Usuário: "+Auth.currentUser();
+
+const projects=["lughlt"];
+const select=document.getElementById("projectSelect");
+projects.forEach(p=>{
+ const o=document.createElement("option");
+ o.value=p;o.textContent=p;
+ select.appendChild(o);
+});
+
+function loadProjectHTML(){
+ const slug=select.value;
+ const saved=Storage.get("project_html_"+slug);
+ if(saved){editor.value=saved;}
+ else{
+  fetch(`projects/${slug}/index.html`).then(r=>r.text()).then(t=>editor.value=t);
+ }
+}
+
+select.addEventListener("change",loadProjectHTML);
+loadProjectHTML();
+
+function saveProject(){
+ const slug=select.value;
+ Storage.set("project_html_"+slug,editor.value);
+ alert("Projeto salvo");
+}
+
+function preview(){
+ const slug=select.value;
+ window.open(`index.html?project=${slug}`,"_blank");
+}
+
+function logout(){
+ Auth.logout();
+ location.href="index.html";
+}
+</script>
+
+</body>
+</html>
