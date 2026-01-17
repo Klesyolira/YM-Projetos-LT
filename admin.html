@@ -2,14 +2,17 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Painel Administrativo</title>
+<title>Painel Administrativo - Pro</title>
 <style>
 body{font-family:Arial;background:#0f172a;color:#e5e7eb;padding:20px}
-select,textarea,input,button{width:100%;margin:8px 0;padding:10px;border-radius:6px;border:none}
-textarea{height:300px;font-family:monospace}
-button{background:#2563eb;color:white;cursor:pointer}
+select,textarea,input,button{width:100%;margin:8px 0;padding:10px;border-radius:6px;border:none;box-sizing: border-box;}
+textarea{height:300px;font-family:monospace;background: #1e293b;color: #94a3b8;border: 1px solid #334155;}
+button{background:#2563eb;color:white;cursor:pointer;font-weight: bold;}
 button.secondary{background:#334155}
+button.danger{background:#dc2626}
 header{display:flex;justify-content:space-between;align-items:center}
+.grid-actions{display: grid; grid-template-columns: 1fr 1fr; gap: 10px;}
+.section{background: #111827; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #1f2937;}
 </style>
 </head>
 <body>
@@ -18,27 +21,37 @@ header{display:flex;justify-content:space-between;align-items:center}
 <h2>Administração de Projetos</h2>
 <div>
 <span id="user"></span>
-<button onclick="logout()" class="secondary">Sair</button>
+<button onclick="logout()" class="secondary" style="width: auto;">Sair</button>
 </div>
 </header>
 
 <hr>
 
-<label>Projeto:</label>
-<select id="projectSelect"></select>
+<div class="section">
+    <label>Gerenciar Projetos:</label>
+    <div class="grid-actions">
+        <select id="projectSelect"></select>
+        <button onclick="createNewProject()" class="secondary">+ Novo Projeto</button>
+    </div>
+</div>
 
-<label>HTML do Projeto:</label>
-<textarea id="editor"></textarea>
-
-<button onclick="saveProject()">Salvar</button>
-<button onclick="preview()" class="secondary">Preview</button>
+<div class="section">
+    <label>Editor de HTML:</label>
+    <textarea id="editor" placeholder="Cole o HTML do projeto aqui..."></textarea>
+    
+    <div class="grid-actions">
+        <button onclick="saveProject()">Salvar Alterações</button>
+        <button onclick="preview()" class="secondary">Visualizar Site</button>
+    </div>
+    <button onclick="deleteProject()" class="danger" style="margin-top: 10px;">Excluir Projeto Selecionado</button>
+</div>
 
 <script src="core/auth.js"></script>
 <script src="core/storage.js"></script>
 
 <script>
+// Verificação de Segurança
 if(!Auth.isLogged()){location.href="login.html";}
-
 if(!Auth.isAdmin()){
  const pin=prompt("Digite o PIN de administrador:");
  if(!Auth.elevate(pin)){
@@ -49,42 +62,104 @@ if(!Auth.isAdmin()){
 
 document.getElementById("user").innerText="Usuário: "+Auth.currentUser();
 
-const projects=["lughlt"];
-const select=document.getElementById("projectSelect");
-projects.forEach(p=>{
- const o=document.createElement("option");
- o.value=p;o.textContent=p;
- select.appendChild(o);
-});
+const select = document.getElementById("projectSelect");
+const editor = document.getElementById("editor");
 
-function loadProjectHTML(){
- const slug=select.value;
- const saved=Storage.get("project_html_"+slug);
- if(saved){editor.value=saved;}
- else{
-  fetch(`projects/${slug}/index.html`).then(r=>r.text()).then(t=>editor.value=t);
- }
+// Carrega a lista de projetos do Storage ou usa a padrão
+function getProjectList() {
+    let list = Storage.get("app_projects_list");
+    if(!list) {
+        list = ["lughlt"]; // Projeto inicial padrão
+        Storage.set("app_projects_list", list);
+    }
+    return list;
 }
 
-select.addEventListener("change",loadProjectHTML);
-loadProjectHTML();
+function updateSelect() {
+    const projects = getProjectList();
+    select.innerHTML = "";
+    projects.forEach(p => {
+        const o = document.createElement("option");
+        o.value = p; o.textContent = p.toUpperCase();
+        select.appendChild(o);
+    });
+}
+
+function createNewProject() {
+    const name = prompt("Digite o nome do novo projeto (sem espaços ou acentos):");
+    if(!name) return;
+    
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+    const projects = getProjectList();
+    
+    if(projects.includes(slug)) {
+        alert("Este projeto já existe!");
+        return;
+    }
+    
+    projects.push(slug);
+    Storage.set("app_projects_list", projects);
+    Storage.set("project_html_" + slug, "<h1>Novo Projeto: " + name + "</h1>");
+    
+    updateSelect();
+    select.value = slug;
+    loadProjectHTML();
+    alert("Projeto criado com sucesso!");
+}
+
+function deleteProject() {
+    const slug = select.value;
+    if(slug === "lughlt") return alert("O projeto principal não pode ser excluído.");
+    
+    if(confirm(`Tem certeza que deseja excluir o projeto ${slug}?`)) {
+        let projects = getProjectList();
+        projects = projects.filter(p => p !== slug);
+        Storage.set("app_projects_list", projects);
+        Storage.remove("project_html_" + slug);
+        updateSelect();
+        loadProjectHTML();
+    }
+}
+
+function loadProjectHTML(){
+    const slug = select.value;
+    if(!slug) {
+        editor.value = "";
+        return;
+    }
+    const saved = Storage.get("project_html_" + slug);
+    if(saved){
+        editor.value = saved;
+    } else {
+        fetch(`projects/${slug}/index.html`)
+            .then(r => r.text())
+            .then(t => { editor.value = t; })
+            .catch(() => { editor.value = ""; });
+    }
+}
 
 function saveProject(){
- const slug=select.value;
- Storage.set("project_html_"+slug,editor.value);
- alert("Projeto salvo");
+    const slug = select.value;
+    if(!slug) return;
+    Storage.set("project_html_" + slug, editor.value);
+    alert("Projeto '" + slug + "' salvo com sucesso!");
 }
 
 function preview(){
- const slug=select.value;
- window.open(`index.html?project=${slug}`,"_blank");
+    const slug = select.value;
+    window.open(`index.html?project=${slug}`, "_blank");
 }
 
 function logout(){
- Auth.logout();
- location.href="index.html";
+    Auth.logout();
+    location.href="index.html";
 }
-</script>
 
+// Inicialização
+select.addEventListener("change", loadProjectHTML);
+updateSelect();
+loadProjectHTML();
+
+</script>
 </body>
 </html>
