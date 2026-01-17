@@ -2,30 +2,28 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Carregando...</title>
+  <title>Sistema de Projetos</title>
 </head>
 <body>
 
-<div id="app">Acedendo ao Banco de Dados...</div>
+<div id="app">Carregando...</div>
 
 <script src="core/auth.js"></script>
 <script src="core/storage.js"></script> 
 <script src="core/router.js"></script>
-<script src="core/loader.js"></script>
-
-<script>
+<script src="core/loader.js"></script> <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. VERIFICAÇÃO DE LOGIN (Isso está correto!)
+  // 1. Verifica login
   if(!Auth.isLogged()){
     window.location.href = "login.html";
     return;
   }
 
-  // 2. PEGAR O NOME DO PROJETO DA URL
-  // Exemplo: se o link for site.com/?project=loja1, o slug será 'loja1'
-  const project = getProjectFromURL() || "lughlt";
+  // 2. Tenta pegar o projeto da URL (?project=nome) ou usa o padrão
+  // A função getProjectFromURL() vem do router.js
+  const project = typeof getProjectFromURL === 'function' ? getProjectFromURL() : "lughlt";
 
-  // 3. CARREGAR DO NEON (A função loadProject agora faz o fetch no banco)
+  // 3. Chama a função de carregamento que está no loader.js
   loadProject(project);
 });
 </script>
