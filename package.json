@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@netlify/neon": "^0.1.0"
+    "@netlify/neon": "^0.1.0",
+    "@octokit/rest": "^20.1.1"
   }
 }
